@@ -35,6 +35,11 @@
 @c list of copyright years.
 @set COPYRIGHT_YEARS            2010, 2012, 2014, 2017
 
+@c ------------------------------------------------------------------------
+
+@set DOWNLOAD_URL       @url{https://bitbucket.org/marcomaggi/ChezInfix/downloads}
+@set GITHUB_URL         @url{https://github.com/marcomaggi/ChezInfix/}
+@set BITBUCKET_URL      @url{https://bitbucket.org/marcomaggi/ChezInfix/}
 
 @c page
 @c ------------------------------------------------------------
@@ -672,9 +677,17 @@ Proceedings of the 1st Annual ACM SIGACT-SIGPLAN Symposium on Principles of Prog
 (1973).
 @end quotation
 
-The last revision of this package can be downloaded from:
+The latest version of this package can be downloaded from:
 
-@center @url{http://github.com/marcomaggi/chez-infix/}
+@center @value{DOWNLOAD_URL}
+
+Development takes place at:
+
+@center @value{GITHUB_URL}
+
+and as backup at:
+
+@center @value{BITBUCKET_URL}
 
 The @rnrs{6} documents are available at:
 

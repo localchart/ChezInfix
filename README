@@ -154,15 +154,23 @@ B. Bug reports
 
 Bug reports are appreciated, use the project's Issue tracker:
 
-	    <http://github.com/marcomaggi/chez-infix/issues>
+	    <https://github.com/marcomaggi/ChezInfix/issues>
 
 
 C. Resources
 ------------
 
-The last revision of this package can be downloaded from:
+The latest version of this package can be downloaded from:
 
-	       <http://github.com/marcomaggi/chez-infix/>
+	 <https://bitbucket.org/marcomaggi/ChezInfix/downloads>
+
+Development takes place at:
+
+	       <https://github.com/marcomaggi/ChezInfix/>
+
+and as backup at:
+
+	     <https://bitbucket.org/marcomaggi/ChezInfix/>
 
 The R6RS documents are available at:
 
