@@ -27,7 +27,7 @@
 
 #!r6rs
 (import (rnrs (6))
-  (infix pratt)
+  (infix pratt (1 0 0))
   (checks))
 
 

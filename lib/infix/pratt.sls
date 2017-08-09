@@ -56,7 +56,7 @@
 
 
 #!r6rs
-(library (infix pratt)
+(library (infix pratt (1 0 0))
   (export infix incr! decr! != xor factorial)
   (import (for (rnrs (6))
 	    run expand (meta 2)))
