@@ -1,0 +1,181 @@
+-*- coding: utf-8-unix -*-
+
+			       Chez/Infix
+			       ==========
+
+
+Topics
+------
+
+  1. Introduction
+  2. License
+  3. Install
+  4. Usage
+  A. Credits
+  B. Bug reports
+  C. Resources
+
+
+1. Introduction
+---------------
+
+This package is a distribution of libraries for Chez Scheme; it provides
+an  implementation of  the INFIX  macro which  converts the  traditional
+infix  notation  for  expressions  to  the  equivalent  Scheme's  prefix
+notation.
+
+  The libraries  have no  dependencies; the  implementation itself  is a
+single, definitive, kill'em all DEFINE-SYNTAX  form with the addition of
+a few auxiliary syntaxes.
+
+  The libraries  attempt to support  Chez 9.4, with the  main executable
+installed as "chez".
+
+  This package makes use of the GNU Autotools.
+
+
+2. License
+----------
+
+Copyright (c) 2010, 2012, 2014, 2017 Marco Maggi <marco.maggi-ipsu@poste.it>
+Copyright (c) 2008 Derick Eddington
+
+  This program is  free software: you can redistribute  it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation,  either version 3 of the License,  or (at your
+option) any later version.
+
+  This program  is distributed in the  hope that it will  be useful, but
+WITHOUT   ANY   WARRANTY;  without   even   the   implied  warranty   of
+MERCHANTABILITY  or  FITNESS FOR  A  PARTICULAR  PURPOSE.  See  the  GNU
+General Public License for more details.
+
+  You should  have received  a copy  of the  GNU General  Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+3. Install
+----------
+
+Before installing Chez/Infix make sure  to have correctly installed Chez
+Scheme with the main executable named "chez".
+
+  To install  Chez/Infix from a  proper release tarball, we  must unpack
+the archive then do:
+
+   $ cd r6rs-infix-1.0.0
+   $ mkdir build
+   $ cd build
+   $ ../configure
+   $ make
+   $ make check
+   $ make install
+
+  To test what a rule will do use the "-n" option; example:
+
+    $ make install -n
+
+  The "Makefile" supports the  "DESTDIR" environment variable to install
+the files under a temporary location; example:
+
+    $ make install DESTDIR=/tmp/infix
+
+  If, instead,  we have checked out  a revision from the  repository, we
+will have  to first build the  infrastructure running a script  from the
+top source directory:
+
+   $ cd chez-infix
+   $ sh autogen.sh
+
+notice that "autogen.sh" will run the program "autoreconf".  After this,
+the procedure is the same as the  one for building from a proper release
+tarball, but we have to enable maintainer mode:
+
+    $ ../configure --enable-maintainer-mode [options]
+    $ make
+    $ make check
+    $ make install
+
+  Libraries are installed under the directory:
+
+			  $(libdir)/ChezScheme
+
+
+4. Usage
+--------
+
+Read the  installed documentation in  Texinfo format.  In short,  to use
+the  library just  import  (infix pratt)  and use  the  INFIX macro:  it
+expands  to a  prefix  expression to  be evaluated  at  runtime, in  the
+lexical  context of  the  macro  use; as  a  special  case "(infix)"  is
+equivalent to "(values)".
+
+  The macro allows us to evaluate forms like:
+
+     (infix atan(1 , 2))	==> (atan 1 2)
+     (infix 1 + 2 + 3)		==> (+ (+ 1 2) 3)
+     (infix 1 + 2 * 3)		==> (+ 1 (* 2 3))
+     (infix (1 + 2) * 3)	==> (* (+ 1 2) 3)
+
+     (infix 2 expt 3 expt 4)	==> (expt 2 (expt 3 4))
+
+     (infix - 5)		==> (- 5)
+     (infix + 5)		==> (+ 5)
+     (infix 5 !)		==> (factorial 5)
+
+     (infix 1 > 2 ? 3 + 4 : 5 * 6)
+     ==> (if (> 1 2) (+ 3 4) (* 5 6))
+
+     (define a 1)
+     (define b 2)
+     (define c 3)
+     (infix cos(a) * tan(b) / c)
+     ==> (/ (* (cos a) (tan b)) c)
+
+
+A. Credits
+----------
+
+The library is the work of Marco Maggi.
+
+  The "Pratt parser"  or "top down operator  precendence parser" concept
+is from this paper:
+
+   Pratt,  Vaughan.   "Top  Down  Operator  Precedence".   Massachussets
+   Institute  of   Technology.   Proceedings  of  the   1st  Annual  ACM
+   SIGACT-SIGPLAN  Symposium  on  Principles  of  Programming  Languages
+   (1973).
+
+  The implementation of XOR is by Derick Eddington.
+
+
+B. Bug reports
+--------------
+
+Bug reports are appreciated, use the project's Issue tracker:
+
+	    <http://github.com/marcomaggi/chez-infix/issues>
+
+
+C. Resources
+------------
+
+The last revision of this package can be downloaded from:
+
+	       <http://github.com/marcomaggi/chez-infix/>
+
+The R6RS documents are available at:
+
+			 <http://www.r6rs.org>
+
+Chez Scheme can be downloaded from:
+
+		 <https://github.com/cisco/ChezScheme>
+
+
+### end of file
+# Local Variables:
+# mode: text
+# fill-column: 72
+# paragraph-start: "*"
+# End:

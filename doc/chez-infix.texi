@@ -1,0 +1,701 @@
+\input texinfo.tex
+@c %**start of header
+@setfilename chez-infix.info
+@settitle Chez/Infix
+@c %**end of header
+
+@include version.texi
+@include macros.texi
+
+@c page
+@c ------------------------------------------------------------
+@c Values.
+@c ------------------------------------------------------------
+
+@set TITLE                      Chez/Infix
+
+@c To be used as @value{PACKAGE} whenever we need to include the full
+@c name of this package.
+@set PACKAGE                    Chez/Infix
+
+@c To be used as @value{PACKAGE} whenever we need to include the
+@c nickname of the project: the name that is used to compose the
+@c distribution tarball or the web address.
+@set PACKAGE_NICKNAME           chez-infix
+
+@c To be used as @value{AUTHOR} whenever we need to include the list of
+@c authors of this document.
+@set AUTHOR                     Marco Maggi
+
+@c To be used as @value{AUTHOR_EMAIL} whenever we need to include the
+@c email of the *single* author of this document.
+@set AUTHOR_EMAIL               @email{marco.maggi-ipsu@@poste.it}
+
+@c To be used as @value{COPYRIGHT_YEARS} whenever we need to include the
+@c list of copyright years.
+@set COPYRIGHT_YEARS            2010, 2012, 2014, 2017
+
+
+@c page
+@c ------------------------------------------------------------
+@c Copyright notice.
+@c ------------------------------------------------------------
+
+@copying
+This document describes version @value{VERSION} of @value{PACKAGE}, a distribution of libraries for
+Chez Scheme, providing multiple versions of the @func{infix} macro which converts the traditional
+infix notation for mathematical expressions to the equivalent Scheme's prefix notation.
+
+The package is distributed under the terms of the @gnu{} General Public License (@gpl{}) and can be
+downloaded from:
+
+@center @url{http://github.com/marcomaggi/@value{PACKAGE_NICKNAME}}
+
+@noindent
+Copyright @copyright{} @value{COPYRIGHT_YEARS} by @value{AUTHOR} @value{AUTHOR_EMAIL}
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document under the terms of the @gnu{}
+Free Documentation License, Version 1.3 or any later version published by the Free Software
+Foundation; with Invariant Sections being ``@gnu{} Free Documentation License'' and ``@gnu{} General
+Public License'', no Front--Cover Texts, and no Back--Cover Texts.  A copy of the license is
+included in the section entitled ``@gnu{} Free Documentation License''.
+@end quotation
+@end copying
+
+@c page
+@c ------------------------------------------------------------
+@c Headers.
+@c ------------------------------------------------------------
+
+@titlepage
+@title @value{TITLE}
+@subtitle Revision @value{VERSION}
+@author @value{AUTHOR} @value{AUTHOR_EMAIL}
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@c ------------------------------------------------------------
+
+@ifinfo
+@dircategory Development
+@direntry
+* chez-infix: (chez-infix).             @value{TITLE}.
+@end direntry
+@end ifinfo
+
+@c ------------------------------------------------------------
+
+@ignore
+@syncodeindex tp cp
+@syncodeindex vr cp
+@syncodeindex fn cp
+@end ignore
+
+@c page
+@ifnottex
+@node Top
+@top @value{TITLE}
+
+@insertcopying
+
+@menu
+* overview::                    Overview of the package.
+* infix::                       Infix to prefix transformer.
+
+Appendices
+
+* Package License::             GNU General Public License.
+* Documentation License::       GNU Free Documentation License.
+* references::                  Bibliography and references.
+
+Indexes
+
+* concept index::               An entry for each concept.
+* function index::              An entry for each function.
+@end menu
+@end ifnottex
+
+@c page
+@node overview
+@chapter Overview of the package
+
+
+This package is a distribution of libraries for Chez Scheme; it provides an implementation of the
+@func{infix} macro which converts the traditional infix notation for expressions to the equivalent
+Scheme's prefix notation.
+
+The libraries have no dependencies; the implementation itself is a single, definitive, kill'em all
+@func{define-syntax} form with the addition of a few auxiliary syntaxes.
+
+The libraries attempt to support Chez 9.4, with the main executable installed as @command{chez}.
+
+This package makes use of the @gnu{} Autotools.
+
+The defined @func{infix} macros allow us to evaluate forms like:
+
+@example
+(infix atan(1, 2))      @expansion{} (atan 1 2)
+(infix 1 + 2 + 3)       @expansion{} (+ (+ 1 2) 3)
+(infix 1 + 2 * 3)       @expansion{} (+ 1 (* 2 3))
+(infix (1 + 2) * 3)     @expansion{} (* (+ 1 2) 3)
+
+(infix 2 expt 3 expt 4) @expansion{} (expt 2 (expt 3 4))
+(infix 2 ** 3 ** 4)     @expansion{} (expt 2 (expt 3 4))
+
+(infix - 5)             @expansion{} (- 5)
+(infix + 5)             @expansion{} (+ 5)
+(infix 5 !)             @expansion{} (factorial 5)
+
+(infix 1 > 2 ? 3 + 4 : 5 * 6)
+@expansion{} (if (> 1 2) (+ 3 4) (* 5 6))
+
+(define a 1)
+(define b 2)
+(define c 3)
+(infix cos(a) * tan(b) / c)
+@expansion{} (/ (* (cos a) (tan b)) c)
+@end example
+
+@c page
+@node infix
+@chapter Infix to prefix transformer
+
+
+The following bindings are exported by the library @library{infix pratt}.
+
+
+@deffn Syntax infix @meta{obj} @dots{}
+The @func{infix} macro converts the traditional infix notation for mathematical expressions to the
+equivalent Scheme's prefix notation.  @func{infix} expands to a prefix expression to be evaluated at
+run--time, in the lexical context of the macro use; as a special case @code{(infix)} is equivalent
+to @code{(values)}.
+@end deffn
+
+
+@menu
+* infix syntax::                Notes on the supported syntax.
+* infix prec::                  Operators precedence.
+* infix notes::                 Random notes on the features.
+@end menu
+
+@c page
+@node infix syntax
+@section Notes on the supported syntax
+
+
+Some expression syntax interpretation rules:
+
+@itemize
+@item
+Any Scheme value can be element of the input form; numbers and all the other values are just put
+there as operands.
+
+@example
+(infix list("ciao" , 'hello , '#vu8(1 2 3 4)))
+@result{} ("ciao" hello #vu8(1 2 3 4))
+@end example
+
+@item
+The following bound identifiers exported by @library{rnrs (6)} are interpreted as binary infix
+operators:
+
+@example
++ - * / div div0 mod mod0 expt
+fl+ fl- fl* fl/ flexpt
+fx+ fx- fx* fxdiv fxdiv0 fxmod fxmod0
+< > <= >= =
+fx<? fx>? fx<=? fx>=? fx=?
+fl<? fl>? fl<=? fl>=? fl=?
+eq? eqv? equal?
+and or
+bitwise-and bitwise-ior bitwise-xor
+bitwise-arithmetic-shift-left
+bitwise-arithmetic-shift-right
+fxand fxior fxxor
+fxarithmetic-shift-left
+fxarithmetic-shift-right
+@end example
+
+@noindent
+the following bound identifiers exported by this library are interpreted as binary infix operators:
+
+@example
+!= xor
+@end example
+
+@noindent
+in addition the following identifiers are recognised by their symbol name and interpreted as aliases
+of binary infix operators:
+
+@example
+&&              @expansion{} and
+\x23D0;\x23D0;  @expansion{} or
+\x00AC;         @expansion{} not
+\x2227;         @expansion{} and
+\x2228;         @expansion{} or
+\x22BB;         @expansion{} xor
+==              @expansion{} =
+<>              @expansion{} !=
+\x00D7;         @expansion{} *
+\x22C5;         @expansion{} *
+**              @expansion{} expt
+%               @expansion{} mod
+&               @expansion{} bitwise-and
+\x23D0;         @expansion{} bitwise-ior
+^               @expansion{} bitwise-xor
+<<              @expansion{} bitwise-arithmetic-shift-left
+>>              @expansion{} bitwise-arithmetic-shift-right
+@end example
+
+@noindent
+where the symbols with escape sequences are:
+
+@table @samp
+@item \x00AC;
+Unicode character not sign.
+
+@item \x00D7;
+Unicode character times.
+
+@item \x2227;
+Unicode character logical and.
+
+@item \x2228;
+Unicode character logical or.
+
+@item \x22BB;
+Unicode character xor.
+
+@item \x22C5;
+Unicode character dot operator.
+
+@item \x23D0;
+Unicode character vertical bar extension.
+@end table
+
+@item
+The following bound identifiers exported by @library{rnrs (6)} are interpreted as unary prefix
+operators:
+
+@example
++ -
+fx+ fx- fl+ fl-
+not bitwise-not fxnot
+@end example
+
+@noindent
+the following bound identifiers exported by this library are interpreted as unary prefix operators:
+
+@example
+incr! decr!
+@end example
+
+@noindent
+in addition the following identifiers are recognised by their symbol name and interpreted as aliases
+of unary prefix operators:
+
+@example
+!       @expansion{} not
+~       @expansion{} bitwise-not
+@end example
+
+@item
+The following bound identifiers exported by this library are interpreted as unary postfix operators:
+
+@example
+incr! decr!
+@end example
+
+@noindent
+in addition the following identifiers are recognised by their symbol name and interpreted as aliases
+of unary postfix operators:
+
+@example
+!       @expansion{} factorial
+@end example
+
+@item
+Almost all the binary infix operators are left--associative with the exception of @func{expt} and
+@func{flexpt} which are right--associative:
+
+@example
+;; left-associative
+(infix 10 - 5 - 3)              @expansion{} (- (- 10 5) 3)
+(infix 10 - 5 - 3)              @expansion{} (- 10 5 3)
+(infix 10 / 5 / 3)              @expansion{} (/ (/ 10 5) 3)
+(infix 10 / 5 / 3)              @expansion{} (/ 10 5 3)
+
+;; right-associative
+(infix 10 expt 5 expt 3)        @expansion{} (expt 10 (expt 5 3))
+@end example
+
+@item
+The identifiers @func{incr!} and @func{decr!} are unary operators that can be applied to expressions
+both in prefix and postfix positions.  When applied in prefix position to an identifier,
+@func{incr!} expands to:
+
+@example
+(infix incr! ?id) @expansion{} (begin (set! ?id (+ ?id 1)) ?id)
+@end example
+
+@noindent
+and @func{decr!} expands to:
+
+@example
+(infix decr! ?id) @expansion{} (begin (set! ?id (- ?id 1)) ?id)
+@end example
+
+When applied in postfix position to an identifier, @func{incr!} expands to:
+
+@example
+(infix ?id incr!) @expansion{} (let ((v ?id)) (set! ?id (+ ?id 1)) v)
+@end example
+
+@noindent
+and @func{decr!} expands to:
+
+@example
+(infix ?id decr!) @expansion{} (let ((v ?id)) (set! ?id (- ?id 1)) v)
+@end example
+
+When applied to a non--identifier expression, both in prefix and postfix position, @func{incr!}
+expands to:
+
+@example
+(infix incr! ?expr)     @expansion{} (+ ?expr 1)
+(infix ?expr incr!)     @expansion{} (+ ?expr 1)
+@end example
+
+@noindent
+and @func{decr!} expands to:
+
+@example
+(infix decr! ?expr)     @expansion{} (- ?expr 1)
+(infix ?expr decr!)     @expansion{} (- ?expr 1)
+@end example
+
+@item
+The ternary conditional operator involves the identifiers @func{?}  and @func{:}, which are
+recognised by their symbol name.
+
+@example
+(infix 1 > 2 ? 3 + 4 : 5 * 6)
+@expansion{} (if (> 1 2) (+ 3 4) (* 5 6))
+@end example
+
+@item
+Identifiers which are not operators are interpreted as variable references.
+
+@item
+If an identifier is followed by a left parenthesis: it is interpreted as the binding of a procedure
+in a procedure application.  Procedure application requires the arguments to be grouped in a list,
+using the comma as separator.
+
+@example
+(define (fun a b c)
+  (+ a b c))
+
+(infix fun (1 , 2 , 3))   @expansion{} (fun 1 2 3)
+@end example
+
+@quotation
+@strong{NOTE} The Scheme reader transforms the sequence:
+
+@example
+, @meta{form}
+@end example
+
+@noindent
+into:
+
+@example
+(unsyntax @meta{form})
+@end example
+
+@noindent
+so the list of arguments is:
+
+@example
+( @metai{arg} (unsyntax @meta{arg}) ... )
+@end example
+
+@rnrs{6} does not define the comma to be a delimiter, so writing:
+
+@example
+func (@metai{arg}, @meta{arg}, ...)
+@end example
+
+@noindent
+with no space between the @meta{arg} and the comma is a syntax error in strict @rnrs{6}
+implementations.
+@end quotation
+
+@item
+The identifiers @func{quote}, @func{quasiquote}, @func{syntax} and @func{quasisyntax} are not
+subject to infix to prefix conversion; the use of such syntaxes just expands to the prefix object:
+
+@example
+(infix (quote       ciao))  @expansion{} (quote ciao)
+(infix (quasiquote  ciao))  @expansion{} (quasiquote ciao)
+(infix (syntax      ciao))  @expansion{} (syntax ciao)
+(infix (quasisyntax ciao))  @expansion{} (quasisyntax ciao)
+@end example
+
+@item
+Matched left and right round parentheses are used to group subexpressions, overriding operators
+precedence rules.
+@end itemize
+
+@c page
+@node infix prec
+@section Operators precedence
+
+
+To determine sensible precedences for operators, we make the following observations:
+
+@itemize
+@item
+Logical operators (@func{and}, @func{or}, @func{not}, @dots{}) are meant to be applied to predicate
+operand expressions and they return a boolean value.
+
+@item
+Numeric comparison operators (@func{=}, @func{<}, @func{>}, @dots{}) are meant to be applied to
+numeric operand expressions and they return a boolean value.
+
+@item
+Arithmetic operators (@func{+}, @func{-}, @func{*}, @func{/}, @dots{}) are meant to be applied to
+numeric operand expressions and they return a numeric value.
+
+@item
+The C language has established a tradition of writing expressions containing bitwise operators
+@code{1 & 2 + ~ 3} meaning @code{(1 & 2) + (~ 3)}, in which bitwise operators take precedence over
+every other operator.
+
+@item
+It makes sense to write expressions like @code{1 < i and i < 4} meaning @code{(1 < i) and (i < 4)},
+because it makes no sense to interpret it as @code{1 < (i and i) < 4}.
+
+@item
+It makes sense to write expressions like @code{1 + 2 < 3 + 4} meaning @code{(1 + 2) < (3 + 4)},
+because it makes no sense to interpret it as @code{1 + (2 < 3) + 4}.
+@end itemize
+
+So @value{PACKAGE} defines operators precedence as follows, from high precedence to low precedence:
+
+@enumerate
+@item
+Procedure application: the left parenthesis preceeded by an identifier starts a procedure
+application.
+
+@item
+Binary infix bitwise shift operators:
+
+@example
+bitwise-arithmetic-shift-left
+bitwise-arithmetic-shift-right
+fxarithmetic-shift-left
+fxarithmetic-shift-right
+@end example
+
+@item
+Unary prefix bitwise operators:
+
+@example
+bitwise-not fxnot
+@end example
+
+@item
+Binary infix bitwise operators:
+
+@example
+bitwise-and bitwise-ior bitwise-xor
+fxand fxior fxxor
+@end example
+
+@item
+Unary prefix arithmetic operators:
+
+@example
++ - incr! decr! fx+ fx- fl+ fl-
+@end example
+
+@item
+Unary postfix arithmetic operators:
+
+@example
+incr! decr! !
+@end example
+
+@item
+Binary infix arithmetic exponentiation operators:
+
+@example
+expt flexpt
+@end example
+
+@item
+Binary infix arithmetic modulo operators:
+
+@example
+mod mod0 fxmod fxmod0
+@end example
+
+@item
+Binary infix multiplication and division arithmetic operators:
+
+@example
+* / div div0 fl* fl/ fx* fxdiv fxdiv0
+@end example
+
+@item
+Binary infix addition and subtraction arithmetic operators:
+
+@example
++ - fl+ fl- fx+ fx-
+@end example
+
+@item
+Comparison operators:
+
+@example
+< > <= >= = !=
+fx<? fx>? fx<=? fx>=? fx=?
+fl<? fl>? fl<=? fl>=? fl=?
+eq? eqv? equal?
+@end example
+
+@item
+Unary prefix logical operators:
+
+@example
+not
+@end example
+
+@item
+Binary infix logical operators:
+
+@example
+and or xor
+@end example
+
+@item
+Ternary conditional operator @code{@dots{} ? @dots{} : @dots{}}.
+
+@item
+Procedure application arguments separator, which is the comma.
+@end enumerate
+
+Here some expansion examples:
+
+@example
+(infix ! 2 + 3)         @expansion{} (not (2 + 3))
+(infix (! 2) + 3)       @error{} expected numeric argument
+
+(infix fxnot 3)         @result{} -3
+(infix fxnot 3 + 10)    @result{} 7
+
+(infix ! cos(3))        @expansion{} (not (cos 3))
+@end example
+
+@c ------------------------------------------------------------
+
+@subsubheading Precedence exceptions
+
+
+The Pratt parser allows the same operator to have different precedence when it is present in prefix
+position or in post fix position.  So under @library{infix pratt} the following expansion takes
+place:
+
+@example
+(infix ! 1 + 2)         @expansion{} (not (+ 1 2))
+@end example
+
+@c page
+@node infix notes
+@section Random notes on the features
+
+
+@subsubheading About the exponentiation and bitwise xor operators
+
+The @func{infix} macro uses @samp{**} as exponentiation operator and @samp{^} as bitwise XOR
+operator; this is controversial because a lot of people, especially LaTeX users, are used to think
+of @samp{^} as exponentiation operator.  The C language has established a tradition to interpret
+@samp{^} as bitwise exclusive OR operator, and the Python language has adopted it; @value{PACKAGE}
+sticks to it, too.
+
+@c ------------------------------------------------------------
+
+@subsubheading About the vertical bar
+
+The C language has established a tradition of interpreting the single vertical bar @samp{|} as
+bitwise inclusive OR operator and the double vertical bar as @samp{||} as logical inclusive OR
+operator.
+
+In the @rnrs{6} Scheme language the vertical bar is used in the block comments delimiters @samp{#|
+@dots{} |#}.  Some text editors for software programmers handle the vertical bar specially in Scheme
+mode, in particular for syntax highlighting.
+
+It would be possible to extend the Scheme reader to allow @samp{|} and @samp{||} to be symbols, but,
+at present, this confuses some text editors in a way that is not easy to fix.  So, for now, rather
+than the vertical bar, @func{infix} recognises the Unicode character vertical bar extension
+(@samp{\x23D0;}) as bitwise inclusive OR and the double vertical bar extension as logical inclusive
+OR.
+
+@c ------------------------------------------------------------
+
+@subsubheading About the unary increment and decrement operators
+
+The identifiers @func{++} and @func{--} would be better choices than @func{incr!} and @func{decr!},
+but @func{++} and @func{--} are not valid identifiers according to @rnrs{6}.
+
+@c page
+@c ------------------------------------------------------------
+@c Appendices.
+@c ------------------------------------------------------------
+
+@include gpl-3.0.texi
+@include fdl-1.3.texi
+
+@c page
+@node references
+@appendix Bibliography and references
+
+
+The ``Pratt parser'' or ``top down operator precendence parser'' concept is from this paper:
+
+@quotation
+Pratt, Vaughan.  ``Top Down Operator Precedence''.  Massachussets Institute of Technology.
+Proceedings of the 1st Annual ACM SIGACT-SIGPLAN Symposium on Principles of Programming Languages
+(1973).
+@end quotation
+
+The last revision of this package can be downloaded from:
+
+@center @url{http://github.com/marcomaggi/chez-infix/}
+
+The @rnrs{6} documents are available at:
+
+@center @url{http://www.r6rs.org}
+
+Chez Scheme can be downloaded from:
+
+@center @url{https://github.com/cisco/ChezScheme}
+
+@c page
+@node concept index
+@appendix An entry for each concept
+
+@printindex cp
+
+@node function index
+@appendix An entry for each function.
+
+@printindex fn
+
+@contents
+@bye
+
+@c end of file
